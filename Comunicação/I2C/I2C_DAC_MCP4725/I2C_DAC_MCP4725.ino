@@ -10,14 +10,16 @@
  * Datasheet do componente: https://www.sparkfun.com/datasheets/BreakoutBoards/MCP4725.pdf
  */
 
-#define SINE_WAVE     1
-#define SAWTOOTH_WAVE 0
+#define SINE_WAVE     0
+#define SAWTOOTH_WAVE 1
+#define TRIANG_WAVE   2
+#define SQUARE_WAVE   3
 
-#if (SINE_WAVE && SAWTOOTH_WAVE)
-#error "DUAS FORMAS DE ONDA ESTAO DEFINIDAS. ESCOLHA APENAS UMA"
-#elif (!SINE_WAVE && !SAWTOOTH_WAVE)
-#error "NENHUMA FORMA DE ONDA ESTA ATIVA. ESCOLHA UMA"
-#endif
+#define WAVE_SELECTION 0
+
+#if (WAVE_SELECTION < 0 || WAVE_SELECTION > 3)
+#error  "INVALID WAVE TYPE"
+#endif 
 
 #include <Wire.h>
 #include <math.h>
@@ -93,19 +95,33 @@ void loop() {
   *   A forma de onda será dada pela forma como a variável voltage_mv
   *   for modificada.
   */
-  if(SINE_WAVE)
+  if(WAVE_SELECTION == SINE_WAVE)
   {
       angle = angle + 0.05;   /** Incremento do ângulo em radianos */
-      voltage_mv = abs((((float)125 * sin(angle))));   /** Como não temos valores negativos para o DAC, utilizaremos valores absolutos, resultando numa onda somente positiva. */
+      voltage_mv = abs((((float)500 * sin(angle))));   /** Como não temos valores negativos para o DAC, utilizaremos valores absolutos, resultando numa onda somente positiva. */
       if(angle > 2*PI) angle = 0;
   }
-  else if(SAWTOOTH_WAVE)
+  else if(WAVE_SELECTION == SAWTOOTH_WAVE)
   {
     voltage_mv = voltage_mv + 50;        /** Incremento do valor da tensão */
     if(voltage_mv > 4000) 
     {
       voltage_mv = 0; /** Limitador para o valor da tensão */
     }
+  }
+  else if(WAVE_SELECTION == TRIANG_WAVE)
+  {
+    static bool sinal = true;
+    if(sinal) voltage_mv = voltage_mv + 100;
+    else voltage_mv = voltage_mv - 100;
+    if(voltage_mv <= 0 || voltage_mv >= 4000) sinal = !sinal;
+  }
+  else if(WAVE_SELECTION == SQUARE_WAVE)
+  {
+    if(voltage_mv == 0) voltage_mv = 1500;
+    else voltage_mv = 0;
+    delayMicroseconds(7500);
+    
   }
 
 }
